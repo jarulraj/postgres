@@ -111,6 +111,31 @@ static void FlushBuffer(volatile BufferDesc *buf, SMgrRelation reln);
 static void AtProcExit_Buffers(int code, Datum arg);
 static int	rnode_comparator(const void *p1, const void *p2);
 
+FILE* block_trace_fp = NULL;
+int block_trace_flush_frequency = 100000;
+
+/* Trace information */
+static void TraceInformation(char operation,
+                             ForkNumber forkNum, BlockNumber blockNum,
+                             Oid spcNode, Oid dbNode, Oid relNode){
+  char trace_string[128];
+
+  if(block_trace_fp == NULL){
+    block_trace_fp = fopen("trace.txt", "a");
+  }
+
+  sprintf(trace_string, "%c, %d, %d, %d, %d, %d\n",
+          operation, forkNum, blockNum, spcNode, dbNode, relNode);
+
+  // Write out trace string
+  fputs(trace_string, block_trace_fp);
+
+  // Flush if needed
+  if(rand() % block_trace_flush_frequency == 0){
+    fflush(block_trace_fp);
+  }
+
+}
 
 /*
  * PrefetchBuffer -- initiate asynchronous read of a block of a relation
@@ -367,6 +392,14 @@ ReadBuffer_common(SMgrRelation smgr, char relpersistence, ForkNumber forkNum,
 											  isExtend,
 											  found);
 
+			/* Trace information */
+			TraceInformation('r',
+			                 forkNum, blockNum,
+                       smgr->smgr_rnode.node.spcNode,
+                       smgr->smgr_rnode.node.dbNode,
+                       smgr->smgr_rnode.node.relNode
+                       );
+
 			/*
 			 * In RBM_ZERO_AND_LOCK mode, the caller expects the buffer to
 			 * be already locked on return.
@@ -541,6 +574,14 @@ ReadBuffer_common(SMgrRelation smgr, char relpersistence, ForkNumber forkNum,
 									  smgr->smgr_rnode.backend,
 									  isExtend,
 									  found);
+
+  /* Trace information */
+  TraceInformation('r',
+                   forkNum, blockNum,
+                   smgr->smgr_rnode.node.spcNode,
+                   smgr->smgr_rnode.node.dbNode,
+                   smgr->smgr_rnode.node.relNode
+                   );
 
 	return BufferDescriptorGetBuffer(bufHdr);
 }
@@ -725,6 +766,15 @@ BufferAlloc(SMgrRelation smgr, char relpersistence, ForkNumber forkNum,
 											   smgr->smgr_rnode.node.spcNode,
 												smgr->smgr_rnode.node.dbNode,
 											  smgr->smgr_rnode.node.relNode);
+
+	      /* Trace information */
+	      TraceInformation('w',
+	                       forkNum, blockNum,
+	                       smgr->smgr_rnode.node.spcNode,
+	                       smgr->smgr_rnode.node.dbNode,
+	                       smgr->smgr_rnode.node.relNode
+	                       );
+
 			}
 			else
 			{
@@ -2067,6 +2117,14 @@ FlushBuffer(volatile BufferDesc *buf, SMgrRelation reln)
 									   reln->smgr_rnode.node.spcNode,
 									   reln->smgr_rnode.node.dbNode,
 									   reln->smgr_rnode.node.relNode);
+
+  /* Trace information */
+  TraceInformation('f',
+                   buf->tag.forkNum, buf->tag.blockNum,
+                   reln->smgr_rnode.node.spcNode,
+                   reln->smgr_rnode.node.dbNode,
+                   reln->smgr_rnode.node.relNode
+                   );
 
 	/* Pop the error context stack */
 	error_context_stack = errcallback.previous;
