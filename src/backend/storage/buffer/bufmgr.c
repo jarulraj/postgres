@@ -124,8 +124,8 @@ static void TraceInformation(char operation,
     block_trace_fp = fopen("trace.txt", "a");
   }
 
-  sprintf(trace_string, "%c, %d, %d, %d, %d, %d\n",
-          operation, forkNum, blockNum, spcNode, dbNode, relNode);
+  sprintf(trace_string, "%c, %d, %d \n",
+          operation, forkNum, blockNum);
 
   // Write out trace string
   fputs(trace_string, block_trace_fp);
