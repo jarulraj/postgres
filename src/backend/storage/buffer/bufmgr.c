@@ -115,16 +115,16 @@ FILE* block_trace_fp = NULL;
 int block_trace_flush_frequency = 100000;
 
 /* Trace information */
-static void TraceInformation(char operation,
-                             ForkNumber forkNum, BlockNumber blockNum,
-                             Oid spcNode, Oid dbNode, Oid relNode){
+void TraceInformation(char operation,
+                      ForkNumber forkNum,
+                      BlockNumber blockNum){
   char trace_string[128];
 
   if(block_trace_fp == NULL){
     block_trace_fp = fopen("trace.txt", "a");
   }
 
-  sprintf(trace_string, "%c, %d, %d \n",
+  sprintf(trace_string, "%c, %d, %d\n",
           operation, forkNum, blockNum);
 
   // Write out trace string
@@ -393,12 +393,7 @@ ReadBuffer_common(SMgrRelation smgr, char relpersistence, ForkNumber forkNum,
 											  found);
 
 			/* Trace information */
-			TraceInformation('r',
-			                 forkNum, blockNum,
-                       smgr->smgr_rnode.node.spcNode,
-                       smgr->smgr_rnode.node.dbNode,
-                       smgr->smgr_rnode.node.relNode
-                       );
+			TraceInformation('r', forkNum, blockNum);
 
 			/*
 			 * In RBM_ZERO_AND_LOCK mode, the caller expects the buffer to
@@ -576,12 +571,7 @@ ReadBuffer_common(SMgrRelation smgr, char relpersistence, ForkNumber forkNum,
 									  found);
 
   /* Trace information */
-  TraceInformation('r',
-                   forkNum, blockNum,
-                   smgr->smgr_rnode.node.spcNode,
-                   smgr->smgr_rnode.node.dbNode,
-                   smgr->smgr_rnode.node.relNode
-                   );
+  TraceInformation('r', forkNum, blockNum);
 
 	return BufferDescriptorGetBuffer(bufHdr);
 }
@@ -768,12 +758,7 @@ BufferAlloc(SMgrRelation smgr, char relpersistence, ForkNumber forkNum,
 											  smgr->smgr_rnode.node.relNode);
 
 	      /* Trace information */
-	      TraceInformation('w',
-	                       forkNum, blockNum,
-	                       smgr->smgr_rnode.node.spcNode,
-	                       smgr->smgr_rnode.node.dbNode,
-	                       smgr->smgr_rnode.node.relNode
-	                       );
+	      TraceInformation('w', forkNum, blockNum);
 
 			}
 			else
@@ -1094,6 +1079,9 @@ MarkBufferDirty(Buffer buffer)
 	LockBufHdr(bufHdr);
 
 	Assert(bufHdr->refcount > 0);
+
+  /* Trace information */
+  TraceInformation('r', bufHdr->tag.forkNum, bufHdr->tag.blockNum);
 
 	/*
 	 * If the buffer was not dirty already, do vacuum accounting.
@@ -2119,12 +2107,7 @@ FlushBuffer(volatile BufferDesc *buf, SMgrRelation reln)
 									   reln->smgr_rnode.node.relNode);
 
   /* Trace information */
-  TraceInformation('f',
-                   buf->tag.forkNum, buf->tag.blockNum,
-                   reln->smgr_rnode.node.spcNode,
-                   reln->smgr_rnode.node.dbNode,
-                   reln->smgr_rnode.node.relNode
-                   );
+  TraceInformation('f', buf->tag.forkNum, buf->tag.blockNum);
 
 	/* Pop the error context stack */
 	error_context_stack = errcallback.previous;

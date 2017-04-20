@@ -228,6 +228,10 @@ extern bool BgBufferSync(void);
 
 extern void AtProcExit_LocalBuffers(void);
 
+extern void TraceInformation(char operation,
+                             ForkNumber forkNum,
+                             BlockNumber blockNum);
+
 /* in freelist.c */
 extern BufferAccessStrategy GetAccessStrategy(BufferAccessStrategyType btype);
 extern void FreeAccessStrategy(BufferAccessStrategy strategy);
