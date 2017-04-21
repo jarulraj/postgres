@@ -2334,6 +2334,9 @@ XLogCheckpointNeeded(XLogSegNo new_segno)
 	return false;
 }
 
+int     xlog_fork_num = 50;
+int     xlog_npages = 0;
+
 /*
  * Write and/or fsync the log at least as far as WriteRqst indicates.
  *
@@ -2357,7 +2360,6 @@ XLogWrite(XLogwrtRqst WriteRqst, bool flexible)
 	int			npages;
 	int			startidx;
 	uint32		startoffset;
-  int     xlog_fork_num = 50;
 
 	/* We should always be inside a critical section here */
 	Assert(CritSectionCount > 0);
@@ -2439,8 +2441,9 @@ XLogWrite(XLogwrtRqst WriteRqst, bool flexible)
 			startoffset = (LogwrtResult.Write - XLOG_BLCKSZ) % XLogSegSize;
 		}
 		npages++;
-    TraceInformation('w', xlog_fork_num, startidx + npages);
-    TraceInformation('f', xlog_fork_num, startidx + npages);
+		xlog_npages++;
+    TraceInformation('w', xlog_fork_num, startidx + xlog_npages);
+    TraceInformation('f', xlog_fork_num, startidx + xlog_npages);
 
 		/*
 		 * Dump the set if this will be the last loop iteration, or if we are

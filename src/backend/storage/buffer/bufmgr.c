@@ -112,7 +112,7 @@ static void AtProcExit_Buffers(int code, Datum arg);
 static int	rnode_comparator(const void *p1, const void *p2);
 
 FILE* block_trace_fp = NULL;
-int block_trace_flush_frequency = 100000;
+int block_trace_flush_frequency = 10000;
 
 /* Trace information */
 void TraceInformation(char operation,
@@ -124,7 +124,7 @@ void TraceInformation(char operation,
     block_trace_fp = fopen("trace.txt", "a");
   }
 
-  sprintf(trace_string, "%c, %d, %d\n",
+  sprintf(trace_string, "%c %d %d\n",
           operation, forkNum, blockNum);
 
   // Write out trace string
