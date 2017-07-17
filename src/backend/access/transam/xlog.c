@@ -2442,8 +2442,10 @@ XLogWrite(XLogwrtRqst WriteRqst, bool flexible)
 		}
 		npages++;
 		xlog_npages++;
-    TraceInformation('w', xlog_fork_num, startidx + xlog_npages);
-    TraceInformation('f', xlog_fork_num, startidx + xlog_npages);
+    TraceInformation('w', xlog_fork_num, startidx + xlog_npages,
+                     101030, 101031, 101032);
+    TraceInformation('f', xlog_fork_num, startidx + xlog_npages,
+                     101030, 101031, 101032);
 
 		/*
 		 * Dump the set if this will be the last loop iteration, or if we are

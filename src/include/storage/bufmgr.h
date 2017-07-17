@@ -229,8 +229,8 @@ extern bool BgBufferSync(void);
 extern void AtProcExit_LocalBuffers(void);
 
 extern void TraceInformation(char operation,
-                             ForkNumber forkNum,
-                             BlockNumber blockNum);
+                             ForkNumber forkNum, BlockNumber blockNum,
+                             Oid spcNode, Oid dbNode, Oid relNode);
 
 /* in freelist.c */
 extern BufferAccessStrategy GetAccessStrategy(BufferAccessStrategyType btype);
