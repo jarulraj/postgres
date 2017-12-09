@@ -32,6 +32,7 @@
 
 #include <sys/file.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "catalog/catalog.h"
 #include "catalog/storage.h"
@@ -111,8 +112,70 @@ static void FlushBuffer(volatile BufferDesc *buf, SMgrRelation reln);
 static void AtProcExit_Buffers(int code, Datum arg);
 static int	rnode_comparator(const void *p1, const void *p2);
 
+static void PrintBufferPool(void);
+static void PrintTimeStamp(int warmed_up_counter);
+
 FILE* block_trace_fp = NULL;
-int block_trace_flush_frequency = 10000;
+int print_frequency = 1000 * 100;
+int block_trace_flush_frequency = 1000 * 100;
+int warmed_up_period = 1000 * 100;
+int warmed_up_counter = 0;
+
+/* -----------------------------------------------------------------
+ *    PrintBufferDescs
+ *
+ *    this function prints all the buffer descriptors, for debugging
+ *    use only.
+ * -----------------------------------------------------------------
+ */
+void PrintBufferPool(void){
+  int     i;
+  volatile BufferDesc *buf = BufferDescriptors;
+  char operation = 'i'; // init
+
+  for (i = 0; i < NBuffers; ++i, ++buf)
+  {
+    char trace_string[128];
+
+    sprintf(trace_string, "%c %d %d %u %u %u %x %u\n",
+            operation,
+            buf->tag.forkNum,
+            buf->tag.blockNum,
+            buf->tag.rnode.spcNode,
+            buf->tag.rnode.dbNode,
+            buf->tag.rnode.relNode,
+            buf->flags & BM_DIRTY,
+            buf->refcount);
+
+    // Write out trace string
+    fputs(trace_string, block_trace_fp);
+  }
+
+  // Flush buffer pool state
+  fflush(block_trace_fp);
+
+}
+
+/* Print Timestamp */
+void PrintTimeStamp(int warmed_up_counter){
+  time_t timer;
+  char buffer[26];
+  struct tm* tm_info;
+  char trace_string[128];
+  char operation = 't'; // timestamp
+
+  time(&timer);
+  tm_info = localtime(&timer);
+  strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+
+  sprintf(trace_string, "%c %s %d\n",
+          operation,
+          buffer,
+          warmed_up_counter);
+
+  // Write out trace string
+  fputs(trace_string, block_trace_fp);
+}
 
 /* Trace information */
 void TraceInformation(char operation,
@@ -122,17 +185,39 @@ void TraceInformation(char operation,
 
   if(block_trace_fp == NULL){
     block_trace_fp = fopen("trace.txt", "a");
+    PrintTimeStamp(warmed_up_counter);
   }
 
-  sprintf(trace_string, "%c %d %d %u %u %u\n",
-          operation, forkNum, blockNum, spcNode, dbNode, relNode);
+  if(rand() % print_frequency == 0){
+    PrintTimeStamp(warmed_up_counter);
+  }
 
-  // Write out trace string
-  fputs(trace_string, block_trace_fp);
+  warmed_up_counter++;
 
-  // Flush if needed
-  if(rand() % block_trace_flush_frequency == 0){
-    fflush(block_trace_fp);
+  if(warmed_up_counter < warmed_up_period){
+    return;
+  }
+  else if(warmed_up_counter == warmed_up_period){
+    // WRITE BUFFER POOL STATE
+
+    PrintTimeStamp(warmed_up_counter);
+    PrintBufferPool();
+  }
+  else{
+    // WRITE I/O TRACES
+
+    sprintf(trace_string, "%c %d %d %u %u %u\n",
+            operation, forkNum, blockNum, spcNode, dbNode, relNode);
+
+    // Write out trace string
+    fputs(trace_string, block_trace_fp);
+
+    // Flush if needed
+    if(rand() % block_trace_flush_frequency == 0){
+      PrintTimeStamp(warmed_up_counter);
+      fflush(block_trace_fp);
+    }
+
   }
 
 }
@@ -2409,34 +2494,6 @@ DropDatabaseBuffers(Oid dbid)
 			UnlockBufHdr(bufHdr);
 	}
 }
-
-/* -----------------------------------------------------------------
- *		PrintBufferDescs
- *
- *		this function prints all the buffer descriptors, for debugging
- *		use only.
- * -----------------------------------------------------------------
- */
-#ifdef NOT_USED
-void
-PrintBufferDescs(void)
-{
-	int			i;
-	volatile BufferDesc *buf = BufferDescriptors;
-
-	for (i = 0; i < NBuffers; ++i, ++buf)
-	{
-		/* theoretically we should lock the bufhdr here */
-		elog(LOG,
-			 "[%02d] (freeNext=%d, rel=%s, "
-			 "blockNum=%u, flags=0x%x, refcount=%u %d)",
-			 i, buf->freeNext,
-		  relpathbackend(buf->tag.rnode, InvalidBackendId, buf->tag.forkNum),
-			 buf->tag.blockNum, buf->flags,
-			 buf->refcount, PrivateRefCount[i]);
-	}
-}
-#endif
 
 #ifdef NOT_USED
 void
