@@ -116,10 +116,11 @@ static void PrintBufferPool(void);
 static void PrintTimeStamp(int warmed_up_counter);
 
 FILE* block_trace_fp = NULL;
-int print_frequency = 1000 * 100;
+int print_frequency = 1000 * 1000;
 int block_trace_flush_frequency = 1000 * 100;
 int warmed_up_period = 1000 * 100;
 int warmed_up_counter = 0;
+int op_count = 1000 * 1000 * 10;
 
 /* -----------------------------------------------------------------
  *    PrintBufferDescs
@@ -203,7 +204,7 @@ void TraceInformation(char operation,
     PrintTimeStamp(warmed_up_counter);
     PrintBufferPool();
   }
-  else{
+  else if(warmed_up_counter <= warmed_up_period + op_count){
     // WRITE I/O TRACES
 
     sprintf(trace_string, "%c %d %d %u %u %u\n",
