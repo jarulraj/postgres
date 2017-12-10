@@ -179,9 +179,9 @@ void PrintTimeStamp(int warmed_up_counter){
 }
 
 /* Trace information */
-void TraceInformation(char operation,
-                      ForkNumber forkNum, BlockNumber blockNum,
-                      Oid spcNode, Oid dbNode, Oid relNode){
+void TraceInformationWithBufferPool(char operation,
+                                    ForkNumber forkNum, BlockNumber blockNum,
+                                    Oid spcNode, Oid dbNode, Oid relNode){
   char trace_string[128];
 
   if(block_trace_fp == NULL){
@@ -219,6 +219,29 @@ void TraceInformation(char operation,
       fflush(block_trace_fp);
     }
 
+  }
+
+}
+
+/* Trace information */
+void TraceInformation(char operation,
+                      ForkNumber forkNum, BlockNumber blockNum,
+                      Oid spcNode, Oid dbNode, Oid relNode){
+  char trace_string[128];
+
+  if(block_trace_fp == NULL){
+    block_trace_fp = fopen("trace.txt", "a");
+  }
+
+  sprintf(trace_string, "%c %d %d %u %u %u\n",
+          operation, forkNum, blockNum, spcNode, dbNode, relNode);
+
+  // Write out trace string
+  fputs(trace_string, block_trace_fp);
+
+  // Flush if needed
+  if(rand() % block_trace_flush_frequency == 0){
+    fflush(block_trace_fp);
   }
 
 }
