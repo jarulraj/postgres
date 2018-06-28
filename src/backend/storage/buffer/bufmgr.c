@@ -2598,6 +2598,11 @@ FlushRelationBuffers(Relation rel)
 						  localpage,
 						  false);
 
+			  /* Trace information */
+			  TraceInformation('f', bufHdr->tag.forkNum, bufHdr->tag.blockNum,
+			                   101030, 101031, 101032);
+
+
 				bufHdr->flags &= ~(BM_DIRTY | BM_JUST_DIRTIED);
 
 				/* Pop the error context stack */

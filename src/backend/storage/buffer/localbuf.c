@@ -210,6 +210,11 @@ LocalBufferAlloc(SMgrRelation smgr, ForkNumber forkNum, BlockNumber blockNum,
 				  localpage,
 				  false);
 
+    /* Trace information */
+    TraceInformation('w', bufHdr->tag.forkNum, bufHdr->tag.blockNum,
+                     101040, 101041, 101042);
+
+
 		/* Mark not-dirty now in case we error out below */
 		bufHdr->flags &= ~BM_DIRTY;
 
